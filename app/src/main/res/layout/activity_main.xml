@@ -13,26 +13,30 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/imageView"
-        android:src="@drawable/logo"
-        android:layout_above="@+id/button_start" />
-    <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Achievements"
-        android:id="@+id/button_achievements"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentEnd="true"
-        android:background="#6b8b23"
-        android:layout_marginTop="10dp" />
+        android:src="@drawable/logo"/>
 
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Start workout"
-        android:id="@+id/button_start"
-        android:layout_above="@+id/button_achievements"
-        android:layout_alignEnd="@+id/button_achievements"
+        android:text="Past activities"
+        android:id="@+id/button_list"
+        android:layout_alignBottom="@+id/imageView"
         android:layout_alignParentStart="true"
-        android:background="#6b8b23" />
+        android:background="#6b8b23"
+        android:layout_alignEnd="@+id/imageView" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Start Workout"
+        android:id="@+id/button_workout"
+        android:layout_above="@+id/button_list"
+        android:layout_alignParentStart="true"
+        android:background="#6b8b23"
+        android:layout_alignEnd="@+id/imageView"
+        android:onClick="goToMap" />
+
+
+
+
 </RelativeLayout>
