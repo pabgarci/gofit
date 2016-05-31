@@ -9,6 +9,7 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     android:background="#ccdbac"
     tools:context="es.pabgarci.gofit.MainActivity">
+
     <ImageView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -35,8 +36,5 @@
         android:background="#6b8b23"
         android:layout_alignEnd="@+id/imageView"
         android:onClick="goToMap" />
-
-
-
 
 </RelativeLayout>

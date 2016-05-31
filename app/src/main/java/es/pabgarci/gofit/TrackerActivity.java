@@ -1,22 +1,26 @@
 package es.pabgarci.gofit;
 
-
 import android.content.ContentValues;
+import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
 import android.os.Handler;
 import android.support.v4.app.ActivityCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.InputType;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.Manifest;
-import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -25,18 +29,21 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.maps.model.Polyline;
-import com.google.android.gms.maps.model.PolylineOptions;
-import com.google.android.gms.vision.barcode.Barcode;
 
+
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Date;
+import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 public class TrackerActivity extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks,
@@ -61,6 +68,7 @@ public class TrackerActivity extends AppCompatActivity implements GoogleApiClien
     Marker marker;
     Button buttonStartStop;
     Button buttonFinish;
+
     LocationsDBHandler admin;
     SQLiteDatabase db;
 
@@ -105,7 +113,7 @@ public class TrackerActivity extends AppCompatActivity implements GoogleApiClien
             buttonFinish.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    finishActivity(v);
+                    showDialog();
                 }
             });
         }
@@ -163,6 +171,47 @@ public class TrackerActivity extends AppCompatActivity implements GoogleApiClien
         textDer2.setText(String.format("%.2f km", (distance * .001)));
     }
 
+    public void showDialog(){
+        final AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Activity name");
+        elapsedTime = elapsedTime + (System.currentTimeMillis() - startTime);
+        handler.removeCallbacks(runnable);
+
+        final EditText input = new EditText(this);
+        input.setInputType(InputType.TYPE_CLASS_TEXT);
+        builder.setView(input);
+        builder.setPositiveButton("Save", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                saveData(input.getText().toString(), elapsedTime);
+                dialog.cancel();
+            }
+        });
+        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+            }
+        });
+        builder.show();
+    }
+
+    public String getAddress(double myLat, double myLng){
+        Geocoder geoCoder = new Geocoder(this, Locale.getDefault());
+        String textAddress = "";
+
+        try {
+            List<Address> myAddress = geoCoder.getFromLocation(myLat,myLng,1);
+            if (myAddress.size() > 0) {
+                for (int i = 0; i < myAddress.get(0).getMaxAddressLineIndex(); i++)
+                    textAddress = myAddress.get(0).getLocality();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return textAddress;
+    }
+
     @Override
     public void onConnectionSuspended(int i) {
         Log.i("MyLocation", "Connection to Google Api has been suspend");
@@ -192,10 +241,15 @@ public class TrackerActivity extends AppCompatActivity implements GoogleApiClien
                 mGoogleApiClient, mLocationRequest, this);
     }
 
-    public void finishActivity(View v){
+    public void saveData(String name, Long time){
         if(!STATE){
             Calendar c = Calendar.getInstance();
-            writeDB("Prueba 1", "Calle 1",12.32, sdf.format(c.getTime()), 0.22);
+            long millis = elapsedTime + (System.currentTimeMillis() - startTime);
+            writeDB(name, getAddress(lastLocation.getLatitude(),lastLocation.getLongitude()),distance * .001, sdf.format(c.getTime()), String.format("%2d:%02d:%02d",
+                    TimeUnit.MILLISECONDS.toHours(millis),
+                    TimeUnit.MILLISECONDS.toMinutes(millis),
+                    TimeUnit.MILLISECONDS.toSeconds(millis)
+            ), calories);
         }
     }
 
@@ -226,17 +280,8 @@ public class TrackerActivity extends AppCompatActivity implements GoogleApiClien
 
                     finish();
                     startActivity(getIntent());
-
-                } else {
-
-                    // permission denied, boo! Disable the
-                    // functionality that depends on this permission.
                 }
-                return;
             }
-
-            // other 'case' lines to check for other
-            // permissions this app might request
         }
     }
 
@@ -248,7 +293,7 @@ public class TrackerActivity extends AppCompatActivity implements GoogleApiClien
         return count;
     }
 
-    public void writeDB(String name, String location, Double distance, String date, Double time) {
+    public void writeDB(String name, String location, Double distance, String date, String time, Double kcal) {
         ContentValues registro = new ContentValues();  //es una clase para guardar datos
         registro.put("_id", countDB() + 1);
         registro.put("NAME", name);
@@ -256,6 +301,7 @@ public class TrackerActivity extends AppCompatActivity implements GoogleApiClien
         registro.put("DISTANCE", distance);
         registro.put("DATE", date);
         registro.put("TIME", time);
+        registro.put("KCAL",kcal);
         db.insert("Locations", null, registro);
     }
 
